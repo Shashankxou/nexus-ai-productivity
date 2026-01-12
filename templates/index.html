@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NEXUS AI - Productivity Command Center</title>
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- FullCalendar -->
+    <link href='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.css' rel='stylesheet' />
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <!-- Animated Background -->
+    <div class="cyber-grid"></div>
+    <div class="particles" id="particles"></div>
+    
+    <!-- Main Container -->
+    <div class="app-container">
+        
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="logo">
+                <i class="fas fa-brain"></i>
+                <h1>NEXUS<span class="ai-text">AI</span></h1>
+            </div>
+            
+            <nav class="nav-menu">
+                <a href="#" class="nav-item active" data-view="dashboard">
+                    <i class="fas fa-chart-line"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="#" class="nav-item" data-view="tasks">
+                    <i class="fas fa-tasks"></i>
+                    <span>Tasks</span>
+                </a>
+                <a href="#" class="nav-item" data-view="calendar">
+                    <i class="fas fa-calendar-alt"></i>
+                    <span>Calendar</span>
+                </a>
+                <a href="#" class="nav-item" data-view="pomodoro">
+                    <i class="fas fa-clock"></i>
+                    <span>Pomodoro</span>
+                </a>
+                <a href="#" class="nav-item" data-view="notes">
+                    <i class="fas fa-brain"></i>
+                    <span>Second Brain</span>
+                </a>
+                <a href="#" class="nav-item" data-view="analytics">
+                    <i class="fas fa-chart-bar"></i>
+                    <span>Analytics</span>
+                </a>
+            </nav>
+            
+            <!-- User Stats -->
+            <div class="user-stats">
+                <div class="stat-item">
+                    <i class="fas fa-trophy"></i>
+                    <div>
+                        <span class="stat-label">Level</span>
+                        <span class="stat-value" id="userLevel">1</span>
+                    </div>
+                </div>
+                <div class="stat-item">
+                    <i class="fas fa-star"></i>
+                    <div>
+                        <span class="stat-label">Points</span>
+                        <span class="stat-value" id="userPoints">0</span>
+                    </div>
+                </div>
+                <div class="stat-item">
+                    <i class="fas fa-fire"></i>
+                    <div>
+                        <span class="stat-label">Streak</span>
+                        <span class="stat-value" id="userStreak">0</span>
+                    </div>
+                </div>
+            </div>
+        </aside>
+        
+        <!-- Main Content -->
+        <main class="main-content">
+            
+            <!-- Header -->
+            <header class="header">
+                <div class="header-left">
+                    <h2 id="viewTitle">Dashboard</h2>
+                    <p id="motivationalMessage" class="motivational-message"></p>
+                </div>
+                <div class="header-right">
+                    <button class="btn-icon" id="voiceBtn" title="Voice Input">
+                        <i class="fas fa-microphone"></i>
+                    </button>
+                    <button class="btn-icon" id="notificationsBtn">
+                        <i class="fas fa-bell"></i>
+                        <span class="notification-badge">3</span>
+                    </button>
+                    <div class="user-avatar">
+                        <i class="fas fa-user-astronaut"></i>
+                    </div>
+                </div>
+            </header>
+            
+            <!-- Dashboard View -->
+            <div id="dashboardView" class="view active">
+                <!-- AI Suggestion Card -->
+                <div class="ai-suggestion-card" id="aiSuggestion">
+                    <div class="ai-icon">
+                        <i class="fas fa-robot"></i>
+                    </div>
+                    <div class="ai-content">
+                        <h3>AI Suggestion</h3>
+                        <p id="aiSuggestionText">Analyzing your tasks...</p>
+                        <button class="btn-primary btn-sm" id="acceptSuggestionBtn">Start Task</button>
+                    </div>
+                </div>
+                
+                <!-- Stats Grid -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                            <i class="fas fa-tasks"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3 id="totalTasks">0</h3>
+                            <p>Total Tasks</p>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3 id="completedTasks">0</h3>
+                            <p>Completed</p>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3 id="totalPomodoros">0</h3>
+                            <p>Pomodoros</p>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
+                            <i class="fas fa-brain"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3 id="totalNotes">0</h3>
+                            <p>Notes</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Productivity Chart -->
+                <div class="chart-card">
+                    <h3><i class="fas fa-chart-line"></i> Productivity Trend</h3>
+                    <img id="productivityChart" src="/api/stats/chart?type=weekly" alt="Productivity Chart" style="width: 100%; border-radius: 10px;">
+                </div>
+                
+                <!-- Badges -->
+                <div class="badges-section">
+                    <h3><i class="fas fa-trophy"></i> Achievements</h3>
+                    <div class="badges-grid" id="badgesGrid">
+                        <!-- Badges will be loaded here -->
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Tasks View -->
+            <div id="tasksView" class="view">
+                <div class="view-header">
+                    <div class="filters">
+                        <button class="filter-btn active" data-filter="all">All</button>
+                        <button class="filter-btn" data-filter="pending">Pending</button>
+                        <button class="filter-btn" data-filter="in_progress">In Progress</button>
+                        <button class="filter-btn" data-filter="completed">Completed</button>
+                    </div>
+                    <button class="btn-primary" id="addTaskBtn">
+                        <i class="fas fa-plus"></i> Add Task
+                    </button>
+                </div>
+                
+                <div class="tasks-container" id="tasksContainer">
+                    <!-- Tasks will be loaded here -->
+                </div>
+            </div>
+            
+            <!-- Calendar View -->
+            <div id="calendarView" class="view">
+                <div class="view-header">
+                    <button class="btn-primary" id="addEventBtn">
+                        <i class="fas fa-plus"></i> Add Event
+                    </button>
+                </div>
+                <div id="calendar"></div>
+            </div>
+            
+            <!-- Pomodoro View -->
+            <div id="pomodoroView" class="view">
+                <div class="pomodoro-container">
+                    <div class="pomodoro-timer">
+                        <div class="timer-circle">
+                            <svg class="timer-svg" viewBox="0 0 200 200">
+                                <circle class="timer-bg" cx="100" cy="100" r="90"></circle>
+                                <circle class="timer-progress" cx="100" cy="100" r="90" id="timerProgress"></circle>
+                            </svg>
+                            <div class="timer-display">
+                                <h1 id="timerDisplay">25:00</h1>
+                                <p id="timerStatus">Ready to focus</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="pomodoro-controls">
+                        <button class="btn-primary btn-lg" id="startPomodoroBtn">
+                            <i class="fas fa-play"></i> Start
+                        </button>
+                        <button class="btn-secondary btn-lg" id="pausePomodoroBtn" style="display: none;">
+                            <i class="fas fa-pause"></i> Pause
+                        </button>
+                        <button class="btn-danger btn-lg" id="resetPomodoroBtn">
+                            <i class="fas fa-redo"></i> Reset
+                        </button>
+                    </div>
+                    
+                    <div class="pomodoro-settings">
+                        <h3>Settings</h3>
+                        <div class="setting-item">
+                            <label>Work Duration (minutes)</label>
+                            <input type="number" id="workDuration" value="25" min="1" max="60">
+                        </div>
+                        <div class="setting-item">
+                            <label>Short Break (minutes)</label>
+                            <input type="number" id="shortBreak" value="5" min="1" max="30">
+                        </div>
+                        <div class="setting-item">
+                            <label>Long Break (minutes)</label>
+                            <input type="number" id="longBreak" value="15" min="1" max="60">
+                        </div>
+                        <div class="setting-item">
+                            <label>Link to Task</label>
+                            <select id="pomodoroTaskSelect">
+                                <option value="">No task selected</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="pomodoro-stats">
+                        <h3>Today's Sessions</h3>
+                        <div class="session-dots" id="sessionDots">
+                            <!-- Session dots will be added here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Notes View (Second Brain) -->
+            <div id="notesView" class="view">
+                <div class="view-header">
+                    <div class="search-bar">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="notesSearch" placeholder="Search notes...">
+                    </div>
+                    <button class="btn-primary" id="addNoteBtn">
+                        <i class="fas fa-plus"></i> New Note
+                    </button>
+                </div>
+                
+                <div class="notes-grid" id="notesGrid">
+                    <!-- Notes will be loaded here -->
+                </div>
+            </div>
+            
+            <!-- Analytics View -->
+            <div id="analyticsView" class="view">
+                <div class="analytics-container">
+                    <h3><i class="fas fa-chart-bar"></i> Productivity Analysis</h3>
+                    <div id="analyticsContent">
+                        <!-- Analytics will be loaded here -->
+                    </div>
+                </div>
+            </div>
+            
+        </main>
+    </div>
+    
+    <!-- Modals -->
+    
+    <!-- Task Modal -->
+    <div class="modal" id="taskModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="taskModalTitle">Add Task</h3>
+                <button class="modal-close" onclick="closeModal('taskModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="taskForm">
+                    <input type="hidden" id="taskId">
+                    <div class="form-group">
+                        <label>Title</label>
+                        <input type="text" id="taskTitle" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Description</label>
+                        <textarea id="taskDescription" rows="3"></textarea>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Priority</label>
+                            <select id="taskPriority">
+                                <option value="low">Low</option>
+                                <option value="medium" selected>Medium</option>
+                                <option value="high">High</option>
+                                <option value="urgent">Urgent</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Estimated Time (min)</label>
+                            <input type="number" id="taskEstimatedTime" min="5" step="5">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Deadline</label>
+                        <input type="datetime-local" id="taskDeadline">
+                    </div>
+                    <div class="form-group">
+                        <label>Tags (comma-separated)</label>
+                        <input type="text" id="taskTags" placeholder="work, urgent, project">
+                    </div>
+                    <div class="modal-actions">
+                        <button type="button" class="btn-secondary" onclick="closeModal('taskModal')">Cancel</button>
+                        <button type="submit" class="btn-primary">Save Task</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Event Modal -->
+    <div class="modal" id="eventModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Add Event</h3>
+                <button class="modal-close" onclick="closeModal('eventModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="eventForm">
+                    <div class="form-group">
+                        <label>Title</label>
+                        <input type="text" id="eventTitle" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Description</label>
+                        <textarea id="eventDescription" rows="2"></textarea>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Start</label>
+                            <input type="datetime-local" id="eventStart" required>
+                        </div>
+                        <div class="form-group">
+                            <label>End</label>
+                            <input type="datetime-local" id="eventEnd" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Location</label>
+                        <input type="text" id="eventLocation">
+                    </div>
+                    <div class="form-group">
+                        <label>Color</label>
+                        <input type="color" id="eventColor" value="#00ffff">
+                    </div>
+                    <div class="modal-actions">
+                        <button type="button" class="btn-secondary" onclick="closeModal('eventModal')">Cancel</button>
+                        <button type="submit" class="btn-primary">Save Event</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Note Modal -->
+    <div class="modal" id="noteModal">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h3 id="noteModalTitle">New Note</h3>
+                <button class="modal-close" onclick="closeModal('noteModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="noteForm">
+                    <input type="hidden" id="noteId">
+                    <div class="form-group">
+                        <label>Title</label>
+                        <input type="text" id="noteTitle" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Content</label>
+                        <textarea id="noteContent" rows="10" required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Tags (comma-separated)</label>
+                        <input type="text" id="noteTags" placeholder="ideas, work, personal">
+                    </div>
+                    <div class="modal-actions">
+                        <button type="button" class="btn-secondary" onclick="closeModal('noteModal')">Cancel</button>
+                        <button type="submit" class="btn-primary">Save Note</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Scripts -->
+    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js'></script>
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>
