@@ -1,5 +1,5 @@
 // ============================================================================
-// NEXUS AI - Frontend JavaScript
+// NEXUS AI - Frontend JavaScript - Complete Version
 // ============================================================================
 
 // Global State
@@ -12,6 +12,7 @@ let pomodoroTimer = null;
 let pomodoroSeconds = 25 * 60;
 let pomodoroRunning = false;
 let pomodoroSessionsToday = 0;
+let recognition = null;
 
 // ============================================================================
 // Initialization
@@ -26,14 +27,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
 function initializeApp() {
     console.log('🚀 NEXUS AI - Initializing...');
-    
-    // Load user stats
     loadUserStats();
-    
-    // Setup navigation
     setupNavigation();
     
-    // Setup voice recognition if available
     if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
         setupVoiceRecognition();
     }
@@ -62,7 +58,6 @@ function createParticles() {
     }
 }
 
-// Add CSS animation for particles
 const style = document.createElement('style');
 style.textContent = `
     @keyframes float {
@@ -73,6 +68,59 @@ style.textContent = `
     }
 `;
 document.head.appendChild(style);
+
+// ============================================================================
+// Event Listeners
+// ============================================================================
+
+function setupEventListeners() {
+    // Task filter buttons
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            const filter = this.getAttribute('data-filter');
+            loadTasks(filter);
+        });
+    });
+    
+    // Add task button
+    document.getElementById('addTaskBtn').addEventListener('click', () => {
+        document.getElementById('taskForm').reset();
+        document.getElementById('taskId').value = '';
+        document.getElementById('taskModalTitle').textContent = 'Add Task';
+        openModal('taskModal');
+    });
+    
+    // Add event button
+    document.getElementById('addEventBtn').addEventListener('click', () => {
+        document.getElementById('eventForm').reset();
+        openModal('eventModal');
+    });
+    
+    // Add note button
+    document.getElementById('addNoteBtn').addEventListener('click', () => {
+        document.getElementById('noteForm').reset();
+        document.getElementById('noteId').value = '';
+        document.getElementById('noteModalTitle').textContent = 'New Note';
+        openModal('noteModal');
+    });
+    
+    // Pomodoro controls
+    document.getElementById('startPomodoroBtn').addEventListener('click', startPomodoro);
+    document.getElementById('pausePomodoroBtn').addEventListener('click', pausePomodoro);
+    document.getElementById('resetPomodoroBtn').addEventListener('click', resetPomodoro);
+    
+    // Notes search
+    document.getElementById('notesSearch').addEventListener('input', (e) => {
+        loadNotes(e.target.value);
+    });
+    
+    // Forms
+    document.getElementById('taskForm').addEventListener('submit', handleTaskSubmit);
+    document.getElementById('eventForm').addEventListener('submit', handleEventSubmit);
+    document.getElementById('noteForm').addEventListener('submit', handleNoteSubmit);
+}
 
 // ============================================================================
 // Navigation
@@ -91,24 +139,20 @@ function setupNavigation() {
 }
 
 function switchView(view) {
-    // Update active nav item
     document.querySelectorAll('.nav-item').forEach(item => {
         item.classList.remove('active');
     });
     document.querySelector(`[data-view="${view}"]`).classList.add('active');
     
-    // Hide all views
     document.querySelectorAll('.view').forEach(v => {
         v.classList.remove('active');
     });
     
-    // Show selected view
     const viewElement = document.getElementById(`${view}View`);
     if (viewElement) {
         viewElement.classList.add('active');
     }
     
-    // Update title
     const titles = {
         'dashboard': 'Dashboard',
         'tasks': 'Tasks',
@@ -119,31 +163,18 @@ function switchView(view) {
     };
     document.getElementById('viewTitle').textContent = titles[view];
     
-    // Load view-specific data
     currentView = view;
     loadViewData(view);
 }
 
 function loadViewData(view) {
     switch(view) {
-        case 'dashboard':
-            loadDashboard();
-            break;
-        case 'tasks':
-            loadTasks();
-            break;
-        case 'calendar':
-            loadCalendar();
-            break;
-        case 'pomodoro':
-            loadPomodoro();
-            break;
-        case 'notes':
-            loadNotes();
-            break;
-        case 'analytics':
-            loadAnalytics();
-            break;
+        case 'dashboard': loadDashboard(); break;
+        case 'tasks': loadTasks(); break;
+        case 'calendar': loadCalendar(); break;
+        case 'pomodoro': loadPomodoro(); break;
+        case 'notes': loadNotes(); break;
+        case 'analytics': loadAnalytics(); break;
     }
 }
 
@@ -153,26 +184,20 @@ function loadViewData(view) {
 
 async function loadDashboard() {
     try {
-        // Load AI suggestion
         const suggestionResponse = await fetch('/api/ai/suggest-task');
         const suggestion = await suggestionResponse.json();
         
         if (suggestion && suggestion.task) {
             document.getElementById('aiSuggestionText').textContent = suggestion.message;
-            document.getElementById('acceptSuggestionBtn').onclick = () => {
-                switchView('tasks');
-                // Optionally highlight the suggested task
-            };
+            document.getElementById('acceptSuggestionBtn').onclick = () => switchView('tasks');
         } else {
             document.getElementById('aiSuggestionText').textContent = 
                 '✨ All caught up! No urgent tasks at the moment.';
             document.getElementById('acceptSuggestionBtn').style.display = 'none';
         }
         
-        // Load stats
         await loadUserStats();
         
-        // Update dashboard stats
         const tasksResponse = await fetch('/api/tasks');
         tasks = await tasksResponse.json();
         
@@ -185,7 +210,6 @@ async function loadDashboard() {
         document.getElementById('totalPomodoros').textContent = userStats.pomodoros_completed || 0;
         document.getElementById('totalNotes').textContent = notes.length;
         
-        // Load badges
         loadBadges();
         
     } catch (error) {
@@ -198,12 +222,10 @@ async function loadUserStats() {
         const response = await fetch('/api/stats');
         userStats = await response.json();
         
-        // Update sidebar stats
         document.getElementById('userLevel').textContent = userStats.level || 1;
         document.getElementById('userPoints').textContent = userStats.total_points || 0;
         document.getElementById('userStreak').textContent = userStats.current_streak || 0;
         
-        // Update motivational message
         if (userStats.motivational_message) {
             document.getElementById('motivationalMessage').textContent = 
                 userStats.motivational_message;
@@ -221,10 +243,7 @@ function loadBadges() {
         userStats.available_badges.forEach(badge => {
             const badgeElement = document.createElement('div');
             badgeElement.className = 'badge-item';
-            badgeElement.innerHTML = `
-                <i>${badge.icon}</i>
-                <p>${badge.name}</p>
-            `;
+            badgeElement.innerHTML = `<i>${badge.icon}</i><p>${badge.name}</p>`;
             badgesGrid.appendChild(badgeElement);
         });
     } else {
@@ -243,8 +262,6 @@ async function loadTasks(filter = 'all') {
         tasks = await response.json();
         
         renderTasks(tasks);
-        
-        // Update pomodoro task select
         updatePomodoroTaskSelect();
     } catch (error) {
         console.error('Error loading tasks:', error);
@@ -274,13 +291,9 @@ function renderTasks(tasksToRender) {
 function createTaskCard(task) {
     const card = document.createElement('div');
     card.className = 'task-card';
-    card.draggable = true;
     card.dataset.taskId = task.id;
     
     const priorityClass = `priority-${task.priority}`;
-    const statusIcon = task.status === 'completed' ? 'fa-check-circle' : 
-                      task.status === 'in_progress' ? 'fa-spinner' : 'fa-circle';
-    
     const deadline = task.deadline ? new Date(task.deadline).toLocaleString() : 'No deadline';
     const tags = task.tags || [];
     
@@ -293,7 +306,7 @@ function createTaskCard(task) {
         <div class="task-meta">
             <span><i class="fas fa-clock"></i> ${deadline}</span>
             ${task.estimated_time ? `<span><i class="fas fa-hourglass"></i> ${task.estimated_time}min</span>` : ''}
-            ${task.pomodoros_completed ? `<span><i class="fas fa-tomato"></i> ${task.pomodoros_completed}</span>` : ''}
+            ${task.pomodoros_completed ? `<span><i class="fas fa-fire"></i> ${task.pomodoros_completed}</span>` : ''}
         </div>
         ${tags.length > 0 ? `
             <div class="task-tags">
@@ -326,10 +339,7 @@ async function completeTask(taskId) {
             body: JSON.stringify({ status: 'completed' })
         });
         
-        // Show celebration animation
         showNotification('🎉 Task completed! +10 points', 'success');
-        
-        // Reload tasks and stats
         await loadTasks();
         await loadUserStats();
         
@@ -348,7 +358,6 @@ async function deleteTask(taskId) {
         await loadTasks();
     } catch (error) {
         console.error('Error deleting task:', error);
-        showNotification('Error deleting task', 'error');
     }
 }
 
@@ -356,7 +365,6 @@ function editTask(taskId) {
     const task = tasks.find(t => t.id === taskId);
     if (!task) return;
     
-    // Populate form
     document.getElementById('taskId').value = task.id;
     document.getElementById('taskTitle').value = task.title;
     document.getElementById('taskDescription').value = task.description || '';
@@ -365,8 +373,7 @@ function editTask(taskId) {
     
     if (task.deadline) {
         const deadline = new Date(task.deadline);
-        document.getElementById('taskDeadline').value = 
-            deadline.toISOString().slice(0, 16);
+        document.getElementById('taskDeadline').value = deadline.toISOString().slice(0, 16);
     }
     
     if (task.tags && task.tags.length > 0) {
@@ -375,6 +382,44 @@ function editTask(taskId) {
     
     document.getElementById('taskModalTitle').textContent = 'Edit Task';
     openModal('taskModal');
+}
+
+async function handleTaskSubmit(e) {
+    e.preventDefault();
+    
+    const taskId = document.getElementById('taskId').value;
+    const taskData = {
+        title: document.getElementById('taskTitle').value,
+        description: document.getElementById('taskDescription').value,
+        priority: document.getElementById('taskPriority').value,
+        estimated_time: parseInt(document.getElementById('taskEstimatedTime').value) || null,
+        deadline: document.getElementById('taskDeadline').value || null,
+        tags: document.getElementById('taskTags').value.split(',').map(t => t.trim()).filter(t => t)
+    };
+    
+    try {
+        if (taskId) {
+            await fetch(`/api/tasks/${taskId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(taskData)
+            });
+            showNotification('Task updated!', 'success');
+        } else {
+            await fetch('/api/tasks', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(taskData)
+            });
+            showNotification('Task created!', 'success');
+        }
+        
+        closeModal('taskModal');
+        await loadTasks();
+    } catch (error) {
+        console.error('Error saving task:', error);
+        showNotification('Error saving task', 'error');
+    }
 }
 
 // ============================================================================
@@ -404,16 +449,10 @@ function loadCalendar() {
                 const events = await response.json();
                 successCallback(events);
             } catch (error) {
-                console.error('Error loading events:', error);
                 failureCallback(error);
             }
         },
-        eventClick: function(info) {
-            // Handle event click
-            console.log('Event clicked:', info.event);
-        },
         dateClick: function(info) {
-            // Open add event modal with selected date
             document.getElementById('eventStart').value = info.dateStr + 'T09:00';
             document.getElementById('eventEnd').value = info.dateStr + 'T10:00';
             openModal('eventModal');
@@ -423,8 +462,36 @@ function loadCalendar() {
     calendar.render();
 }
 
+async function handleEventSubmit(e) {
+    e.preventDefault();
+    
+    const eventData = {
+        title: document.getElementById('eventTitle').value,
+        description: document.getElementById('eventDescription').value,
+        start: document.getElementById('eventStart').value,
+        end: document.getElementById('eventEnd').value,
+        location: document.getElementById('eventLocation').value,
+        color: document.getElementById('eventColor').value
+    };
+    
+    try {
+        await fetch('/api/events', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(eventData)
+        });
+        
+        showNotification('Event created!', 'success');
+        closeModal('eventModal');
+        if (calendar) calendar.refetchEvents();
+    } catch (error) {
+        console.error('Error saving event:', error);
+        showNotification('Error saving event', 'error');
+    }
+}
+
 // ============================================================================
-// Pomodoro Timer
+// Pomodoro
 // ============================================================================
 
 function loadPomodoro() {
@@ -451,7 +518,6 @@ function updatePomodoroDisplay() {
     document.getElementById('timerDisplay').textContent = 
         `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
     
-    // Update progress circle
     const workDuration = parseInt(document.getElementById('workDuration').value) * 60;
     const progress = 1 - (pomodoroSeconds / workDuration);
     const circumference = 2 * Math.PI * 90;
@@ -495,18 +561,11 @@ function resetPomodoro() {
 
 async function completePomodoroSession() {
     pausePomodoro();
-    
-    // Play completion sound (if available)
-    playNotificationSound();
-    
-    // Show notification
     showNotification('🎉 Pomodoro completed! Great work!', 'success');
     
-    // Add session dot
     pomodoroSessionsToday++;
     addSessionDot();
     
-    // Save to backend
     const taskId = document.getElementById('pomodoroTaskSelect').value;
     const duration = parseInt(document.getElementById('workDuration').value);
     
@@ -522,7 +581,6 @@ async function completePomodoroSession() {
         console.error('Error saving pomodoro:', error);
     }
     
-    // Start break
     const sessionsUntilLongBreak = 4;
     const isLongBreak = pomodoroSessionsToday % sessionsUntilLongBreak === 0;
     const breakDuration = isLongBreak ? 
@@ -543,7 +601,7 @@ function addSessionDot() {
 }
 
 // ============================================================================
-// Notes (Second Brain)
+// Notes
 // ============================================================================
 
 async function loadNotes(searchQuery = '') {
@@ -618,6 +676,42 @@ function editNote(noteId) {
     
     document.getElementById('noteModalTitle').textContent = 'Edit Note';
     openModal('noteModal');
+}
+
+async function handleNoteSubmit(e) {
+    e.preventDefault();
+    
+    const noteId = document.getElementById('noteId').value;
+    const noteData = {
+        title: document.getElementById('noteTitle').value,
+        content: document.getElementById('noteContent').value,
+        tags: document.getElementById('noteTags').value.split(',').map(t => t.trim()).filter(t => t)
+    };
+    
+    try {
+        if (noteId) {
+            await fetch(`/api/notes/${noteId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(noteData)
+            });
+            showNotification('Note updated!', 'success');
+        } else {
+            await fetch('/api/notes', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(noteData)
+            });
+            showNotification('Note created! +3 points', 'success');
+        }
+        
+        closeModal('noteModal');
+        await loadNotes();
+        await loadUserStats();
+    } catch (error) {
+        console.error('Error saving note:', error);
+        showNotification('Error saving note', 'error');
+    }
 }
 
 // ============================================================================
@@ -701,4 +795,128 @@ async function loadAnalytics() {
     }
 }
 
-// Continued in next part...
+// ============================================================================
+// Voice Recognition
+// ============================================================================
+
+function setupVoiceRecognition() {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    recognition = new SpeechRecognition();
+    recognition.continuous = false;
+    recognition.lang = 'en-US';
+    
+    recognition.onresult = function(event) {
+        const transcript = event.results[0][0].transcript;
+        handleVoiceCommand(transcript);
+    };
+    
+    document.getElementById('voiceBtn').addEventListener('click', () => {
+        recognition.start();
+        showNotification('🎤 Listening...', 'info');
+    });
+}
+
+function handleVoiceCommand(command) {
+    const lower = command.toLowerCase();
+    
+    if (lower.includes('create task') || lower.includes('add task')) {
+        openModal('taskModal');
+        showNotification('Opening task form', 'success');
+    } else if (lower.includes('create note') || lower.includes('add note')) {
+        openModal('noteModal');
+        showNotification('Opening note form', 'success');
+    } else if (lower.includes('start pomodoro')) {
+        switchView('pomodoro');
+        setTimeout(startPomodoro, 500);
+        showNotification('Starting Pomodoro', 'success');
+    } else {
+        showNotification(`Command not recognized: "${command}"`, 'info');
+    }
+}
+
+// ============================================================================
+// Modals
+// ============================================================================
+
+function openModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.classList.add('active');
+    }
+}
+
+function closeModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.classList.remove('active');
+    }
+}
+
+// ============================================================================
+// Notifications
+// ============================================================================
+
+function showNotification(message, type = 'info') {
+    const notification = document.createElement('div');
+    notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 1rem 1.5rem;
+        background: ${type === 'success' ? 'rgba(0, 255, 128, 0.2)' : 
+                     type === 'error' ? 'rgba(255, 0, 0, 0.2)' : 
+                     'rgba(0, 255, 255, 0.2)'};
+        border: 1px solid ${type === 'success' ? '#00ff80' : 
+                           type === 'error' ? '#ff4444' : 
+                           'var(--neon-cyan)'};
+        border-radius: 0.5rem;
+        color: white;
+        z-index: 10000;
+        animation: slideInRight 0.3s ease;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+    `;
+    notification.textContent = message;
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+        notification.style.animation = 'slideOutRight 0.3s ease';
+        setTimeout(() => notification.remove(), 300);
+    }, 3000);
+}
+
+const notifStyle = document.createElement('style');
+notifStyle.textContent = `
+    @keyframes slideInRight {
+        from { transform: translateX(400px); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
+    }
+    @keyframes slideOutRight {
+        from { transform: translateX(0); opacity: 1; }
+        to { transform: translateX(400px); opacity: 0; }
+    }
+`;
+document.head.appendChild(notifStyle);
+
+// ============================================================================
+// Utility Functions
+// ============================================================================
+
+function playNotificationSound() {
+    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+    
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+    
+    oscillator.frequency.value = 800;
+    oscillator.type = 'sine';
+    
+    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+    
+    oscillator.start(audioContext.currentTime);
+    oscillator.stop(audioContext.currentTime + 0.5);
+}
+
+console.log('✨ NEXUS AI - Ready to boost your productivity!');
